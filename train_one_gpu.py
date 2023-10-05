@@ -38,7 +38,7 @@ os.environ["MKL_NUM_THREADS"] = "6"  # export MKL_NUM_THREADS=6
 os.environ["VECLIB_MAXIMUM_THREADS"] = "4"  # export VECLIB_MAXIMUM_THREADS=4
 os.environ["NUMEXPR_NUM_THREADS"] = "6"  # export NUMEXPR_NUM_THREADS=6
 
-
+# %% show mask
 def show_mask(mask, ax, random_color=False):
     if random_color:
         color = np.concatenate([np.random.random(3), np.array([0.6])], axis=0)
@@ -48,7 +48,7 @@ def show_mask(mask, ax, random_color=False):
     mask_image = mask.reshape(h, w, 1) * color.reshape(1, 1, -1)
     ax.imshow(mask_image)
 
-
+# %% show box
 def show_box(box, ax):
     x0, y0 = box[0], box[1]
     w, h = box[2] - box[0], box[3] - box[1]
@@ -56,54 +56,86 @@ def show_box(box, ax):
         plt.Rectangle((x0, y0), w, h, edgecolor="blue", facecolor=(0, 0, 0, 0), lw=2)
     )
 
+# %% resize images
+def resize_images_in_directory(path, size=(1024, 1024), quality=100):
+    """
+    Resize all images in the specified directory to the given size.
 
-def resize(path):
-  dirs = os.listdir( path )
-  for item in tqdm(dirs):
-    if os.path.isfile(path+item):
-      im = Image.open(path+item)
-      f, e = os.path.splitext(path+item)
-      imResize = im.resize((1024,1024), Image.NEAREST)
-      imResize.save(f+e, 'PNG', quality=100)
+    Parameters:
+    - path: Path to the directory containing images to be resized.
+    - size: Tuple specifying the desired width and height of the resized images.
+    - quality: Desired quality of the resized images.
 
-label_path =  "data/nucleus_data/segmentation_maps/"
-output_features_path = "data/nucleus_data/features/"
-resize(label_path)
+    Returns:
+    None
+    """
+    dirs = os.listdir(path)
+    for item in tqdm(dirs):
+        full_path = os.path.join(path, item)
+        if os.path.isfile(full_path):
+            with Image.open(full_path) as im:
+                imResize = im.resize(size, Image.NEAREST)
+                f, e = os.path.splitext(full_path)
+                imResize.save(f + e, 'PNG', quality=quality)
+
+# Example usage:
+label_path = "data/nucleus_data/segmentation_maps"
+output_features_path = "data/nucleus_data/features"
+resize_images_in_directory(label_path)
+
+# %% filter out empty masks
+def filter_non_empty_masks(label_path, output_features_path, full_ids_csv='full_file_ids.csv', filtered_ids_csv='file_ids.csv'):
+    """
+    Extracts file IDs from feature filenames, saves them to a CSV, 
+    and then filters out IDs corresponding to empty masks.
+
+    Parameters:
+    - label_path: Path to the directory containing label files.
+    - output_features_path: Path to the directory containing feature files.
+    - full_ids_csv: Name of the CSV file to save all file IDs.
+    - filtered_ids_csv: Name of the CSV file to save filtered file IDs.
+
+    Returns:
+    None
+    """
+    
+    # Extract IDs from feature filenames
+    ids = []
+    feature_filenames = [f for f in listdir(output_features_path) if isfile(join(output_features_path, f))]
+    for i in range(len(feature_filenames)):
+        ids.append(feature_filenames[i][1:])
+    
+    # Save all IDs to a CSV file
+    df = pd.DataFrame(ids, columns=["file_ids"])
+    df.to_csv(full_ids_csv, index=False)
+    
+    # Load the saved CSV
+    df = pd.read_csv(full_ids_csv)
+    ids = df['file_ids'].tolist()
+    non_empty_ids = []
+
+    # Filter out IDs corresponding to empty masks
+    for file_id in ids:
+        mask_path = os.path.join(label_path, 'L' + file_id)
+        mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+        if cv2.countNonZero(mask) > 0:
+            non_empty_ids.append(file_id)
+
+    # Save the filtered IDs to another CSV file
+    df_non_empty = pd.DataFrame(non_empty_ids, columns=["file_ids"])
+    df_non_empty.sort_values(by='file_ids', inplace=True)  # Sort the DataFrame by 'file_ids'
+    df_non_empty.to_csv(filtered_ids_csv, index=False)
+
+# Example usage:
+# label_path = "/path_to_labels"
+# output_features_path = "/path_to_features"
+# filter_non_empty_masks(label_path, output_features_path)
 
 
-ids=[]
-label_filenames = [f for f in listdir(label_path) if isfile(join(label_path, f))]
-feature_filenames = [f for f in listdir(output_features_path) if isfile(join(output_features_path, f))]
-for i in range(len(feature_filenames)):
-  ids.append(feature_filenames[i][1:])
-print(len(ids))
-
-df = pd.DataFrame(ids ,columns=["file_ids"])
-df.to_csv('full_file_ids.csv', index=False)
-
-#sanity check
-df = pd.read_csv('full_file_ids.csv')
-
-
-df = pd.read_csv('full_file_ids.csv')
-ids = df['file_ids'].tolist()
-non_empty_ids = []
-
-for file_id in ids:
-    mask_path = os.path.join(label_path, 'L' + file_id)
-    mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
-    if cv2.countNonZero(mask) > 0:
-        non_empty_ids.append(file_id)
-
-df_non_empty = pd.DataFrame(non_empty_ids, columns=["file_ids"])
-df_non_empty.sort_values(by='file_ids', inplace=True)  # Sort the DataFrame by 'file_ids'
-df_non_empty.to_csv('file_ids.csv', index=False)
-
-
-dif = pd.read_csv('file_ids.csv')
 
 
 
+# %% dataset
 class SegmentationDataset(Dataset):
     def __init__(self, csv_file, bbox_shift=20):
         self.df = pd.read_csv(csv_file)
@@ -158,7 +190,7 @@ class SegmentationDataset(Dataset):
         )
 
 
-# Instantiate your dataset
+# %% sanity check
 tr_dataset = SegmentationDataset(csv_file='file_ids.csv',)
 tr_dataloader = DataLoader(tr_dataset, batch_size=4, shuffle=True)
 
@@ -246,6 +278,7 @@ parser.add_argument("--device", type=str, default="cuda:0")
 args = parser.parse_args()
 
 
+# %% set up wandb
 if args.use_wandb:
     import wandb
 
@@ -266,7 +299,7 @@ run_id = datetime.now().strftime("%Y%m%d-%H%M")
 model_save_path = join(args.work_dir, args.task_name + "-" + run_id)
 device = torch.device(args.device)
 
-
+# %% model
 class CellSAM(nn.Module):
     def __init__(
         self,
@@ -317,7 +350,7 @@ class CellSAM(nn.Module):
         return ori_res_masks
     
 
-
+# %% main
 def main():
     os.makedirs(model_save_path, exist_ok=True)
     shutil.copyfile(
@@ -353,6 +386,7 @@ def main():
     seg_loss = monai.losses.DiceLoss(sigmoid=True, squared_pred=True, reduction="mean")
     # cross entropy loss
     ce_loss = nn.BCEWithLogitsLoss(reduction="mean")
+    
     # %% train
     num_epochs = args.num_epochs
     iter_num = 0
