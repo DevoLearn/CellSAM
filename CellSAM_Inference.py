@@ -63,7 +63,7 @@ def cellsam_infernce(cellsam_model, img_embed, box_1024, H, W):
 
 # %% load model and image
 parser = argparse.ArgumentParser(
-    description="run inference on testing set based on CellSAM"
+    description="run inference on testing set based CellSAM"
 )
 parser.add_argument(
     "-i",
