@@ -2,7 +2,7 @@
 train the mask decoder
 freeze prompt image encoder and image encoder
 """
-
+# %% import packages
 import os
 import sys
 
@@ -28,7 +28,7 @@ from os.path import isfile, join
 from PIL import Image
 import cv2
 
-# set seed
+# %% set seed
 torch.manual_seed(2023)
 torch.cuda.empty_cache()
 
@@ -130,8 +130,6 @@ def filter_non_empty_masks(label_path, output_features_path, full_ids_csv='full_
 # label_path = "/path_to_labels"
 # output_features_path = "/path_to_features"
 # filter_non_empty_masks(label_path, output_features_path)
-
-
 
 
 
@@ -386,7 +384,7 @@ def main():
     seg_loss = monai.losses.DiceLoss(sigmoid=True, squared_pred=True, reduction="mean")
     # cross entropy loss
     ce_loss = nn.BCEWithLogitsLoss(reduction="mean")
-    
+
     # %% train
     num_epochs = args.num_epochs
     iter_num = 0
