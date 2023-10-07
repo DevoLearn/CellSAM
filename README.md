@@ -1,1 +1,1 @@
-# SAM-SAM
+# CellSAM
