@@ -195,8 +195,8 @@ class BboxPromptDemo:
             align_corners=False,
         )  # (1, 1, gt.shape)
         low_res_pred = low_res_pred.squeeze().cpu().numpy()  # (256, 256)
-        medsam_seg = (low_res_pred > 0.5).astype(np.uint8)
-        return medsam_seg
+        cellsam_seg = (low_res_pred > 0.5).astype(np.uint8)
+        return cellsam_seg
 
 
 
