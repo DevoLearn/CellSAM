@@ -237,7 +237,7 @@ parser.add_argument(
 parser.add_argument("-task_name", type=str, default="CellSAM-ViT-B")
 parser.add_argument("-model_type", type=str, default="vit_b")
 parser.add_argument(
-    "-checkpoint", type=str, default="work_dir/SAM/sam_vit_b_01ec64.pth"
+    "-checkpoint", type=str, default="work_dir/CellSAM/sam_vit_b_01ec64.pth"
 )
 # parser.add_argument('-device', type=str, default='cuda:0')
 parser.add_argument(
