@@ -89,3 +89,6 @@ One  can navigate through th folder for the `notebooks/explore_preprocess_cell_t
 - We also thank Alexandre Bonnet for sharing this insightful [blog](https://encord.com/blog/learn-how-to-fine-tune-the-segment-anything-model-sam/).
 - we also thanks for the code MedSAM Code owner for there code on Medical images [MedSAM](https://github.com/bowang-lab/MedSAM/tree/main)
 
+## Final Report
+
+Please find the [final report](https://gist.github.com/sushmanthreddy/618e642d2adfc6b58b6b5df0e9dbd3cd) for this project.
